@@ -98,7 +98,6 @@ def prepare_tensors(X, y):
     return X_tensor, y_tensor
 
 
-# Определение модели LSTM
 class LSTMModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
         super(LSTMModel, self).__init__()
