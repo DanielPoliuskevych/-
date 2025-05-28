@@ -13,8 +13,6 @@ from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter.messagebox as msgbox
 
-# Общие функции для работы с данными
-# Переменная-флаг: использовать кэш или нет
 use_cached_data = None
 
 def ask_update_permission():
@@ -141,20 +139,16 @@ def forecast(model, data_scaled, seq_length, forecast_days, data_min, data_max, 
     return forecast + seasonality[-forecast_days:]
 
 
-# Функция для получения рекомендаций по сельскохозяйственным действиям
 def show_recommendations():
-    # Получаем средние значения прогноза
     avg_temp = global_forecast_temp[0]
     avg_prcp = global_forecast_prcp[0]
     avg_rhum = global_forecast_rhum[0]
     avg_wind = global_forecast_wind[0]
 
-    # Создаем новое окно для рекомендаций
     recommendation_window = tk.Toplevel(root)
     recommendation_window.title("Sowing Recommendations")
     recommendation_window.geometry("700x600")
 
-    # Выводим средние значения прогноза
     avg_values_label = tk.Label(
         recommendation_window,
         text=f"Forecast for the next day:\n"
@@ -167,7 +161,6 @@ def show_recommendations():
     )
     avg_values_label.pack(pady=10)
 
-    # Список культур с их оптимальными условиями для выращивания
     crops = [
         {
             "name": "Пшениця",
@@ -269,11 +262,9 @@ def show_recommendations():
         },
     ]
 
-    # Создаем текстовое поле для вывода параметров культур
     crops_text = tk.Text(recommendation_window, wrap=tk.WORD, height=15, width=80)
     crops_text.pack(pady=10, padx=10)
 
-    # Выводим параметры каждой культуры
     crops_text.insert(tk.END, "Crop parameters:\n\n")
     for crop in crops:
         crops_text.insert(
@@ -284,12 +275,10 @@ def show_recommendations():
             f"  Precipitation: {crop['precipitation_range'][0]}–{crop['precipitation_range'][1]} mm/day\n"
             f"  Wind Speed: {crop['wind_range'][0]}–{crop['wind_range'][1]} m/s\n\n",
         )
-    crops_text.config(state=tk.DISABLED)  # Запрещаем редактирование
+    crops_text.config(state=tk.DISABLED) 
 
-    # Sowing Recommendations
     recommendations = []
     for crop in crops:
-        # Расчёт допустимых диапазонов с отклонением 10%
         temp_min = crop["temp_range"][0] * 0.9
         temp_max = crop["temp_range"][1] * 1.1
         humidity_min = crop["humidity_range"][0] * 0.9
@@ -299,7 +288,6 @@ def show_recommendations():
         wind_min = crop["wind_range"][0] * 0.9
         wind_max = crop["wind_range"][1] * 1.1
 
-        # Проверка условий
         if (
                 temp_min <= avg_temp <= temp_max
                 and humidity_min <= avg_rhum <= humidity_max
@@ -310,7 +298,6 @@ def show_recommendations():
                 f"✅ {crop['name']} — Suitable conditions for sowing"
             )
 
-    # Вывод рекомендаций
     recommendation_label = tk.Label(
         recommendation_window,
         text="Sowing recommendations:",
@@ -343,21 +330,17 @@ def show_historical_data():
     city_name = city_combobox.get()
     location = cities[city_name]
 
-    # Параметры
     today = datetime.today()
     end = today - pd.Timedelta(days=1)
     start = end - pd.Timedelta(days=30)
 
-    # Исторические данные
     rhum_data = fetch_hourly_data('rhum', location, start, end, city_name)
     temp_data = fetch_daily_data('tavg', location, start, end, city_name)
     prcp_data = fetch_daily_data('prcp', location, start, end, city_name)
     wdsp_data = fetch_daily_data('wspd', location, start, end, city_name)
 
-    # Подготовка данных для графиков
     forecast_dates = [start + pd.Timedelta(days=i) for i in range(0, 30)]
 
-    # Убедимся, что количество данных совпадает
     if len(rhum_data) != len(forecast_dates):
         rhum_data = rhum_data[:len(forecast_dates)]
     if len(temp_data) != len(forecast_dates):
@@ -367,57 +350,51 @@ def show_historical_data():
     if len(wdsp_data) != len(forecast_dates):
         wdsp_data = wdsp_data[:len(forecast_dates)]
 
-    # Создание нового окна для графиков
     new_window = tk.Toplevel(root)
     new_window.title(f"Historical Data for City {city_name}")
 
-    # Создание фигуры для графиков
     figure_hist = plt.Figure(figsize=(8, 6), dpi=100)
     canvas_hist = FigureCanvasTkAgg(figure_hist, master=new_window)
     canvas_hist.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-    # Создаем подграфики (subplots)
-    ax1 = figure_hist.add_subplot(221)  # График влажности
-    ax2 = figure_hist.add_subplot(223)  # График температуры
-    ax3 = figure_hist.add_subplot(222)  # График осадков
-    ax4 = figure_hist.add_subplot(224)  # График скорости ветра
+    ax1 = figure_hist.add_subplot(221)
+    ax2 = figure_hist.add_subplot(223) 
+    ax3 = figure_hist.add_subplot(222) 
+    ax4 = figure_hist.add_subplot(224)
 
-    # Humidity
+    
     ax1.plot(forecast_dates, rhum_data, color="blue")
     ax1.set_title("Humidity (30 days)")
     ax1.set_xlabel("Date")
     ax1.set_ylabel("Humidity (%)")
-    ax1.set_xticks(forecast_dates[::7])  # Даты раз в 7 days
+    ax1.set_xticks(forecast_dates[::7]) 
     ax1.set_xticklabels([date.strftime('%d-%m') for date in forecast_dates[::7]], rotation=45, fontsize=8)
     ax1.legend()
     ax1.grid()
 
-    # Temperature
     ax2.plot(forecast_dates, temp_data, color="red")
     ax2.set_title("Temperature (30 days)")
     ax2.set_xlabel("Date")
     ax2.set_ylabel("Temperature (°C)")
-    ax2.set_xticks(forecast_dates[::7])  # Даты раз в 7 days
+    ax2.set_xticks(forecast_dates[::7]) 
     ax2.set_xticklabels([date.strftime('%d-%m') for date in forecast_dates[::7]], rotation=45, fontsize=8)
     ax2.legend()
     ax2.grid()
 
-    # Precipitation
     ax3.plot(forecast_dates, prcp_data, color="green")
     ax3.set_title("Precipitation (30 days)")
     ax3.set_xlabel("Date")
     ax3.set_ylabel("Precipitation (мм)")
-    ax3.set_xticks(forecast_dates[::7])  # Даты раз в 7 days
+    ax3.set_xticks(forecast_dates[::7]) 
     ax3.set_xticklabels([date.strftime('%d-%m') for date in forecast_dates[::7]], rotation=45, fontsize=8)
     ax3.legend()
     ax3.grid()
 
-    # Wind Speed
     ax4.plot(forecast_dates, wdsp_data, color="purple")
     ax4.set_title("Wind Speed (30 days)")
     ax4.set_xlabel("Date")
     ax4.set_ylabel("Wind Speed (m/s)")
-    ax4.set_xticks(forecast_dates[::7])  # Даты раз в 7 days
+    ax4.set_xticks(forecast_dates[::7]) 
     ax4.set_xticklabels([date.strftime('%d-%m') for date in forecast_dates[::7]], rotation=45, fontsize=8)
     ax4.legend()
     ax4.grid()
@@ -431,14 +408,12 @@ def run_forecast():
     city_name = city_combobox.get()
     location = cities[city_name]
 
-    # Параметры
     today = datetime.today()
-    end = today - pd.Timedelta(days=1)  # Вчера
-    start = end - pd.DateOffset(years=2)  # За 2 года до вчерашнего дня
+    end = today - pd.Timedelta(days=1) 
+    start = end - pd.DateOffset(years=2)
     seq_length = 30
     forecast_days = 14
 
-    # Прогноз влажности
     rhum_data = fetch_hourly_data('rhum', location, start, end, city_name)
     rhum_scaled, rhum_seasonality, rhum_min, rhum_max = decompose_and_prepare(rhum_data)
     X_rhum, y_rhum = create_sequences(rhum_scaled, seq_length)
@@ -446,7 +421,6 @@ def run_forecast():
     model_rhum = train_model(X_rhum_train, y_rhum_train)
     forecast_rhum = forecast(model_rhum, rhum_scaled, seq_length, forecast_days, rhum_min, rhum_max, rhum_seasonality)
 
-    # Прогноз температуры
     temp_data = fetch_daily_data('tavg', location, start, end, city_name)
     temp_scaled, temp_seasonality, temp_min, temp_max = decompose_and_prepare(temp_data)
     X_temp, y_temp = create_sequences(temp_scaled, seq_length)
@@ -454,7 +428,6 @@ def run_forecast():
     model_temp = train_model(X_temp_train, y_temp_train)
     forecast_temp = forecast(model_temp, temp_scaled, seq_length, forecast_days, temp_min, temp_max, temp_seasonality)
 
-    # Прогноз осадков
     prcp_data = fetch_daily_data('prcp', location, start, end, city_name)
     prcp_scaled, prcp_seasonality, prcp_min, prcp_max = decompose_and_prepare(prcp_data)
     X_prcp, y_prcp = create_sequences(prcp_scaled, seq_length)
@@ -462,10 +435,9 @@ def run_forecast():
     model_prcp = train_model(X_prcp_train, y_prcp_train)
 
     forecast_prcp = forecast(model_prcp, prcp_scaled, seq_length, forecast_days, prcp_min, prcp_max, prcp_seasonality)
-    forecast_prcp = np.where(forecast_prcp < 0.2, 0, forecast_prcp)  # убираем "шум"
+    forecast_prcp = np.where(forecast_prcp < 0.2, 0, forecast_prcp) 
     global_forecast_prcp = np.array(forecast_prcp)
 
-    # Прогноз скорости ветра
     wdsp_data = fetch_daily_data('wspd', location, start, end, city_name)
     wdsp_scaled, wdsp_seasonality, wdsp_min, wdsp_max = decompose_and_prepare(wdsp_data)
     X_wdsp, y_wdsp = create_sequences(wdsp_scaled, seq_length)
@@ -478,19 +450,15 @@ def run_forecast():
     global_forecast_rhum = np.array(forecast_rhum)
     global_forecast_wind = np.array(forecast_wdsp)
 
-    #Даты для прогноза
     forecast_dates = [end + pd.Timedelta(days=i) for i in range(1, forecast_days + 1)]
 
-    # Построение графика
     figure.clear()
 
-    # Создаём два подграфика (subplots)
-    ax1 = figure.add_subplot(221)  # Первый подграфик для влажности
-    ax2 = figure.add_subplot(223)  # Второй подграфик для температуры
-    ax3 = figure.add_subplot(222)  # Третий подграфик для осадков
-    ax4 = figure.add_subplot(224)  # Четвертый подграфик для скорости ветра
+    ax1 = figure.add_subplot(221) 
+    ax2 = figure.add_subplot(223) 
+    ax3 = figure.add_subplot(222) 
+    ax4 = figure.add_subplot(224) 
 
-    # Forecast of humidity on the first graph
     ax1.plot(forecast_dates, forecast_rhum, color="blue", linestyle="--")
     ax1.set_title("Humidity Forecast")
     ax1.set_xlabel("Date")
@@ -500,7 +468,6 @@ def run_forecast():
     ax1.legend()
     ax1.grid()
 
-    # Forecast of temperature on the second graph
     ax2.plot(forecast_dates, forecast_temp, color="red", linestyle="--")
     ax2.set_title("Temperature Forecast")
     ax2.set_xlabel("Date")
@@ -510,7 +477,6 @@ def run_forecast():
     ax2.legend()
     ax2.grid()
 
-    # Forecast of precipitation on the third graph
     ax3.plot(forecast_dates, forecast_prcp, color="green", linestyle="--")
     ax3.set_title("Precipitation Forecast")
     ax3.set_xlabel("Date")
@@ -520,7 +486,6 @@ def run_forecast():
     ax3.legend()
     ax3.grid()
 
-    # Forecast of wind speed on the fourth graph
     ax4.plot(forecast_dates, forecast_wdsp, color="purple", linestyle="--")
     ax4.set_title("Wind Speed Forecast")
     ax4.set_xlabel("Date")
@@ -532,17 +497,10 @@ def run_forecast():
 
     figure.tight_layout(pad=3.0)
     canvas.draw()
-
-    # Сохраняем прогнозы в глобальные переменные для использования в рекомендациях
-
-
-    # Активируем кнопку для рекомендаций
     recommendation_button.config(state=tk.NORMAL)
 
 
-# Функция для вызова рекомендаций
 
-# Данные городов
 cities = {
     "Харків": Point(49.9935, 36.2304, 100),
     "Київ": Point(50.4501, 30.5234, 100),
@@ -553,30 +511,24 @@ cities = {
     "Кривий Ріг": Point(47.9105, 33.3918, 125),
 }
 
-# Создание окна
 root = tk.Tk()
 root.title("Weather Forecast")
 
-# Выбор города
 tk.Label(root, text="Select a city:").pack(pady=5)
 city_combobox = ttk.Combobox(root, values=list(cities.keys()), state="readonly")
 city_combobox.pack(pady=5)
 city_combobox.set("Харків")
 
-# Кнопка для запуска прогноза
 tk.Button(root, text="Generate Forecast", command=run_forecast).pack(pady=10)
 tk.Button(root, text="Show Historical Data", command=show_historical_data).pack(pady=10)
 
-# Кнопка для рекомендаций (изначально неактивна)
 recommendation_button = tk.Button(root, text="Get Recommendations", command=show_recommendations, state=tk.DISABLED)
 recommendation_button.pack(pady=10)
 
-# Создание области для отображения графиков
 figure = plt.Figure(figsize=(8, 6), dpi=100)
 canvas = FigureCanvasTkAgg(figure, master=root)
 canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-# Label для отображения рекомендаций
 recommendation_label = tk.Label(root, text="", justify=tk.LEFT)
 recommendation_label.pack(pady=10)
 
